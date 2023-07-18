@@ -6,10 +6,9 @@ const port = 3000;
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const bodyParser = require("body-parser");
-const cookieParser = require('cookie-parser');
-require('dotenv').config();
+const cookieParser = require("cookie-parser");
+require("dotenv").config();
 const secretKey = process.env.SECRET_KEY;
-
 
 app.use(cookieParser());
 
@@ -37,6 +36,7 @@ const userSchema = new mongoose.Schema({
   username: String,
   email: String,
   password: String,
+  isAdmin: Boolean,
   created_at: Date,
 });
 
@@ -47,19 +47,19 @@ const queSchema = new mongoose.Schema({
   description: String,
   testCases: [],
   created_by: String,
+  solution: String,
   created_at: Date,
 });
 const questionModel = mongoose.model("questionModel", queSchema);
 
 const submissionSchema = new mongoose.Schema({
-  userId: String,
+  submitted_by: String,
   questionId: String,
   solution: String,
   submitted_at: Date,
 });
 
 const submissionModel = mongoose.model("submissionModel", submissionSchema);
-// const USERS = [];
 
 // const QUESTIONS = [{
 //     title: "Two states",
@@ -70,9 +70,6 @@ const submissionModel = mongoose.model("submissionModel", submissionSchema);
 //     }]
 // }];
 
-// const SUBMISSION = [
-
-// ]
 const validationMiddleware = async (req, res, next) => {
   const { username, email, password } = req.body;
   if (!username || !email || !password) {
@@ -125,7 +122,7 @@ app.post(
     if (!username || !password || !email) {
       return res
         .status(400)
-        .json({success: false, error: "Username and password are required" });
+        .json({ success: false, error: "Username and password are required" });
     }
     const curTime = new Date();
     var newUser = new userModel({
@@ -133,16 +130,21 @@ app.post(
       email,
       password,
       created_at: curTime,
+      isAdmin: false,
     });
     try {
       const saveUser = await newUser.save();
       // Generate a JWT token
       console.log(secretKey);
-      const token = jwt.sign({ userId: saveUser._id }, secretKey,{expiresIn:"2d"});
-      res.status(200).json({ success:true, message: "Signup successful", token });
+      const token = jwt.sign({ userId: saveUser._id }, secretKey, {
+        expiresIn: "2d",
+      });
+      res
+        .status(200)
+        .json({ success: true, message: "Signup successful", token });
     } catch (error) {
       console.log(error);
-      res.status(500).json({ success: false, error: "Signup Failed"});
+      res.status(500).json({ success: false, error: "Signup Failed" });
     }
   }
 );
@@ -152,30 +154,115 @@ app.post("/login", async function (req, res) {
   if (!username || !password) {
     return res
       .status(400)
-      .json({success: false, error: "Username and password are required" });
+      .json({ success: false, error: "Username and password are required" });
   }
   try {
     const user = await userModel.findOne({ username });
     if (!user) {
-      return res.status(401).json({success: false, error: "Invalid username" });
+      return res
+        .status(401)
+        .json({ success: false, error: "Invalid username" });
     }
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      return res.status(401).json({success: false, error: "Password is not valid" });
+      return res
+        .status(401)
+        .json({ success: false, error: "Password is not valid" });
     }
-    const token = jwt.sign({ userId: user._id }, secretKey,{expiresIn:"2d"});
-    res.cookie('token',token,{httpOnly:true});
-    res.status(200).json({ success:true,message: "Login successful", token });
+    const token = jwt.sign({ userId: user._id }, secretKey, {
+      expiresIn: "2d",
+    });
+    res.cookie("token", token, { httpOnly: true });
+    res.status(200).json({ success: true, message: "Login successful", token });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ success: false,message: "Login failed" });
+    res.status(500).json({ success: false, message: "Login failed" });
   }
-  
 });
+const authenticateToken = async (req, res, next) => {
+  const token = req.headers.authorization.split(" ")[1];
+  if (!token) {
+    return res
+      .status(401)
+      .json({ success: false, message: "No token was provided" });
+  }
 
-app.get("/questions", function (req, res) {
-  //return the user all the questions in the QUESTIONS array
-  res.send("Hello World from route 3!");
+  jwt.verify(token, secretKey, (error, decodedToken) => {
+    if (error) {
+      return res.status(401).json({ success: false, message: "Invalid token" });
+    }
+    req.token = decodedToken;
+
+    next();
+  });
+};
+const checkAdmin = async (req, res, next) => {
+  const token = req.token;
+  const userId = token["userId"];
+  console.log(userId);
+  const user = await userModel.findById(userId);
+  const isAdmin = user["isAdmin"];
+  if (!isAdmin) {
+    return res
+      .status(401)
+      .json({ success: false, error: "User is not authorized to be admin" });
+  }
+  next();
+};
+app.post(
+  "/postQuestion",
+  authenticateToken,
+  checkAdmin,
+  async function (req, res) {
+    const { title, description, testCases } = req.body;
+    if (!title || !description || !testCases) {
+      return res
+        .status(400)
+        .json({
+          success: false,
+          error: "title, description and testcases are required",
+        });
+    }
+    const userId = req.token.userId;
+    const curTime = new Date();
+    const user = await userModel.findById(userId);
+    const username = user["username"];
+    
+    var newQuestion = new questionModel({
+      title: title,
+      description: description,
+      testCases: testCases,
+      created_by: username,
+      solution: "",
+      created_at: curTime,
+    });
+
+    try {
+      await newQuestion.save();
+      //To-Do Submit a solution with the question and question should be added to database only after
+      res
+        .status(200)
+        .json({ success: true, message: "Question posted successfully" });
+    } catch (error) {
+      console.log(error);
+      res.status(500).json({ success: false, error: "Question not posted!!!" });
+    }
+  }
+);
+
+app.get("/questions",authenticateToken, async function (req, res) {
+  try{
+    const questions = await questionModel.find();
+    res.status(200).json({success:true,questions});
+  }
+  catch(error){
+    res.status(500).json({ success: false, error: "Internal server error!!!" });
+  }
+});
+app.post("/submissions", function(req, res) {
+  // let the user submit a problem, randomly accept or reject the solution
+  // Store the submission in the SUBMISSION array above
+ res.send("Hello World from route 4!")
 });
 
 app.get("/submissions", function (req, res) {
@@ -183,15 +270,7 @@ app.get("/submissions", function (req, res) {
   res.send("Hello World from route 4!");
 });
 
-app.post("/submissions", function (req, res) {
-  // let the user submit a problem, randomly accept or reject the solution
-  // Store the submission in the SUBMISSION array above
-  res.send("Hello World from route 4!");
-});
 
-// leaving as hard todos
-// Create a route that lets an admin add a new problem
-// ensure that only admins can do that.
 
 app.listen(port, function () {
   console.log(`Example app listening on port ${port}`);
