@@ -6,8 +6,10 @@ const port = 3000;
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const bodyParser = require("body-parser");
-const secretKey = process.env.SECRET_KEY;
 const cookieParser = require('cookie-parser');
+require('dotenv').config();
+const secretKey = process.env.SECRET_KEY;
+
 
 app.use(cookieParser());
 
@@ -120,6 +122,11 @@ app.post(
   encryptionMiddleware,
   async function (req, res) {
     const { username, email, password } = req.body;
+    if (!username || !password || !email) {
+      return res
+        .status(400)
+        .json({success: false, error: "Username and password are required" });
+    }
     const curTime = new Date();
     var newUser = new userModel({
       username,
@@ -130,11 +137,12 @@ app.post(
     try {
       const saveUser = await newUser.save();
       // Generate a JWT token
-      const token = jwt.sign({ userId: saveUser._id }, secretKey);
-      res.status(200).json({ message: "Signup successful", user: saveUser });
+      console.log(secretKey);
+      const token = jwt.sign({ userId: saveUser._id }, secretKey,{expiresIn:"2d"});
+      res.status(200).json({ success:true, message: "Signup successful", token });
     } catch (error) {
       console.log(error);
-      res.status(500).json({ message: "Signup failed" });
+      res.status(500).json({ success: false, error: "Signup Failed"});
     }
   }
 );
@@ -144,35 +152,25 @@ app.post("/login", async function (req, res) {
   if (!username || !password) {
     return res
       .status(400)
-      .json({ error: "Username and password are required" });
+      .json({success: false, error: "Username and password are required" });
   }
   try {
     const user = await userModel.findOne({ username });
     if (!user) {
-      return res.status(401).json({ error: "Invalid username" });
+      return res.status(401).json({success: false, error: "Invalid username" });
     }
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
-      return res.status(401).json({ error: "Password is not valid" });
+      return res.status(401).json({success: false, error: "Password is not valid" });
     }
-    const token = jwt.sign({ userId: user._id }, secretKey);
+    const token = jwt.sign({ userId: user._id }, secretKey,{expiresIn:"2d"});
     res.cookie('token',token,{httpOnly:true});
-    res.status(200).json({ message: "Login successful", token });
+    res.status(200).json({ success:true,message: "Login successful", token });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Login failed" });
+    res.status(500).json({ success: false,message: "Login failed" });
   }
-  // Add logic to decode body
-  // body should have email and password
-
-  // Check if the user with the given email exists in the USERS array
-  // Also ensure that the password is the same
-
-  // If the password is the same, return back 200 status code to the client
-  // Also send back a token (any random string will do for now)
-  // If the password is not the same, return back 401 status code to the client
-
-  res.send("Hello World from route 2!");
+  
 });
 
 app.get("/questions", function (req, res) {
