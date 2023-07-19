@@ -259,10 +259,24 @@ app.get("/questions",authenticateToken, async function (req, res) {
     res.status(500).json({ success: false, error: "Internal server error!!!" });
   }
 });
-app.post("/submissions", function(req, res) {
-  // let the user submit a problem, randomly accept or reject the solution
-  // Store the submission in the SUBMISSION array above
- res.send("Hello World from route 4!")
+
+app.post("/submitSolution", authenticateToken,async function(req, res) {
+  const {questionId,solution} = req.body;
+  const userId = req.token.userId;
+  const curTime = new Date();
+  try{
+    var newSolution = new submissionModel({
+      submitted_by:userId,
+      questionId:questionId,
+      solution:solution,
+      submitted_at:curTime
+    });
+    await newSolution.save();
+    res.status(200).json({success:true,error:"Solution submitted successfully"});
+  }
+  catch(error){
+    res.status(500).json({success:false,error:"Solution could not be submitted"});
+  }
 });
 
 app.get("/submissions", function (req, res) {
