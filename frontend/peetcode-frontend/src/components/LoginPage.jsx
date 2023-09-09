@@ -9,6 +9,7 @@ function Login() {
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const navigate = useNavigate();
+  document.getElementsByTagName("body")[0].classList.add(["overscroll-none"])
   const handleLogin = async (e)=>{
     e.preventDefault();
     try{

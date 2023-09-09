@@ -260,6 +260,19 @@ app.get("/questions",authenticateToken, async function (req, res) {
     res.status(500).json({ success: false, error: "Internal server error!!!" });
   }
 });
+app.get("/questions/:id",authenticateToken, async function (req, res) {
+  try{
+    const questionId = req.params.id
+    const question = await questionModel.findById(questionId);
+    if(!question){
+      return res.status(404).json({ success: false, error: "Question not found" });
+    }
+    res.status(200).json({success:true,question});
+  }
+  catch(error){
+    res.status(500).json({ success: false, error: "Internal server error!!!" });
+  }
+});
 
 app.post("/submitSolution", authenticateToken,async function(req, res) {
   const {questionId,solution} = req.body;
