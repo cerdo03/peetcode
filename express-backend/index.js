@@ -35,6 +35,7 @@ mongoose
 const userSchema = new mongoose.Schema({
   username: String,
   email: String,
+  name:String,
   password: String,
   isAdmin: Boolean,
   created_at: Date,
@@ -43,9 +44,12 @@ const userSchema = new mongoose.Schema({
 const userModel = mongoose.model("user", userSchema);
 
 const queSchema = new mongoose.Schema({
+  que_id:String,
   title: String,
   description: String,
+  difficulty:String,
   testCases: [],
+  acRate:String,
   created_by: String,
   solution: String,
   created_at: Date,
@@ -61,18 +65,10 @@ const submissionSchema = new mongoose.Schema({
 
 const submissionModel = mongoose.model("submissionModel", submissionSchema);
 
-// const QUESTIONS = [{
-//     title: "Two states",
-//     description: "Given an array , return the maximum of the array?",
-//     testCases: [{
-//         input: "[1,2,3,4,5]",
-//         output: "5"
-//     }]
-// }];
 
 const validationMiddleware = async (req, res, next) => {
-  const { username, email, password } = req.body;
-  if (!username || !email || !password) {
+  const { username, email, password, name} = req.body;
+  if (!username || !email || !password || !name) {
     return res.status(400).json({ error: "All fields are required" });
   }
   next();
@@ -118,8 +114,8 @@ app.post(
   checkUniqueFields,
   encryptionMiddleware,
   async function (req, res) {
-    const { username, email, password } = req.body;
-    if (!username || !password || !email) {
+    const { username, email, password, name } = req.body;
+    if (!username || !password || !email || !name) {
       return res
         .status(400)
         .json({ success: false, error: "Username and password are required" });
@@ -128,6 +124,7 @@ app.post(
     var newUser = new userModel({
       username,
       email,
+      name,
       password,
       created_at: curTime,
       isAdmin: false,
@@ -214,8 +211,8 @@ app.post(
   authenticateToken,
   checkAdmin,
   async function (req, res) {
-    const { title, description, testCases } = req.body;
-    if (!title || !description || !testCases) {
+    const { title, description, testCases,difficulty } = req.body;
+    if (!title || !description || !testCases || !difficulty) {
       return res
         .status(400)
         .json({
@@ -227,10 +224,14 @@ app.post(
     const curTime = new Date();
     const user = await userModel.findById(userId);
     const username = user["username"];
-    
+    const que_id=questionModel.countDocuments()+1
+    const acRate = String(Math.random()*(100))+"%";
     var newQuestion = new questionModel({
+      que_id:que_id,
       title: title,
+      acRate:acRate,
       description: description,
+      difficulty:difficulty,
       testCases: testCases,
       created_by: username,
       solution: "",
@@ -252,7 +253,7 @@ app.post(
 
 app.get("/questions",authenticateToken, async function (req, res) {
   try{
-    const questions = await questionModel.find();
+    const questions = await questionModel.find().select('que_id title difficulty acRate');;
     res.status(200).json({success:true,questions});
   }
   catch(error){
