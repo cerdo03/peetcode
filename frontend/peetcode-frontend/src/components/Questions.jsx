@@ -27,6 +27,7 @@ function CodeEditor(props) {
       onChange={(newValue) => {
         console.log("Code:", newValue);
       }}
+      className="rounded-b-[8px]"
     />
   );
 }
@@ -93,7 +94,6 @@ function Dropdown({ lang, setLang }) {
     </div>
   );
 }
-
 function TextColor(difficulty) {
   if (difficulty == "Easy") return "text-green-500";
   else if (difficulty == "Medium") return "text-yellow-500";
@@ -143,7 +143,7 @@ function Questions() {
   }, []);
 
   const [sizes, setSizes] = useState(["50%", "50%"]);
-  const [horSizes, setHorSizes] = useState(["70%", "30%"]);
+  const [horSizes, setHorSizes] = useState(["90%", "10%"]);
 
   const layoutCSS = {
     height: "100%",
@@ -175,7 +175,7 @@ function Questions() {
   }
   return (
     <>
-      <div className="bg-[#1A1A1A] min-h-screen flex flex-col">
+      <div className="bg-[#1A1A1A] grow-[1] flex flex-col">
         <SplitPane
           split="vertical"
           sizes={sizes}
@@ -208,10 +208,10 @@ function Questions() {
             </SashContent>
           )}
         >
-          <Pane minSize={50} maxSize="70%" className="m-2 mb-4">
+          <Pane minSize={50} maxSize="70%" className="py-2 pl-2">
             <div
               style={{ ...layoutCSS, background: "#282828" }}
-              className="flex-col rounded-[8px] mr-[10px] px-9 py-7"
+              className="flex-col rounded-[8px] px-9 py-7"
             >
               <div className="text-white text-lg font-semibold text-left mt-11">
                 {question ? question.que_id + ". " + question.title : ""}
@@ -234,7 +234,7 @@ function Questions() {
                 {question.testCases.map((testcase, index) => (
                   <div className="flex flex-col justify-start">
                     <strong>Example {index + 1}:</strong>
-                    <pre className="text-white text-left mt-4 mx-4">
+                    <pre className="text-white text-left mt-4 mx-4 whitespace-pre-wrap">
                       <div>
                         <strong>Input:</strong>
                         {testcase.input}
@@ -253,39 +253,47 @@ function Questions() {
               </div>
             </div>
           </Pane>
-          <Pane minSize={50} maxSize="70%" className="flex justify-center items-center pr-4">
+          <Pane minSize={50} maxSize="70%" className="flex justify-center items-center p-2">
             <SplitPane
               split="horizontal"
               sizes={horSizes}
               onChange={setHorSizes}
               sashRender={(index, active) => (
-                <SashContent className="action-sash-wrap inline-block items-center justify-center  bg-[#1A1A1A]" id="horizontal_splitter">
+                <SashContent className="action-sash-wrap  items-center  bg-[#1A1A1A]" id="horizontal_splitter">
                   <span className="action">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 2" width="14" height="2" fill="currentColor" class="transition text-gray-5 dark:text-dark-gray-5 group-hover:text-white dark:group-hover:text-white"><circle r="1" transform="matrix(-1 0 0 1 1 1)"></circle><circle r="1" transform="matrix(-1 0 0 1 7 1)"></circle><circle r="1" transform="matrix(-1 0 0 1 13 1)"></circle></svg>
                   </span>
                 </SashContent>
               )}
             >
-              <Pane minSize={50} maxSize="70%" className="m-2 bg-[#1A1A1A]">
+              <Pane minSize={50} maxSize="90%" className="pb-2 bg-[#1A1A1A]">
                 <div
                   style={{ ...layoutCSSHor, background: "#282828" }}
-                  className="flex-col rounded-[8px] mb-[10px] px-9 py-7"
+                  className="flex-col rounded-[8px]"
                 >
-                  <div className="bg-[#303030] border-b-2 border-[#454545] flex">
+                  <div className="bg-[#303030] border-b-2 border-[#454545] flex rounded-t-[8px]">
                     <Dropdown setLang={setLang} lang={lang} />
                   </div>
                   <CodeEditor language={lang} defaultCode={defaultCode} />
                 </div>
               </Pane>
-              <Pane minSize={50} maxSize="70%" className="m-2 bg-[#1A1A1A]">
+              <Pane minSize={50} maxSize="50%" className="pt-2 bg-[#1A1A1A]">
                 <div
                   style={{ ...layoutCSSHor, background: "#282828" }}
-                  className="flex-col rounded-[8px] mt-[10px] px-9 py-7"
+                  className="flex-col rounded-[8px]"
                 >
-                  <div className="bg-[#303030] border-b-2 border-[#454545] flex">
-                    <Dropdown setLang={setLang} lang={lang} />
+                  <div className="bg-[#303030] border-b-2 rounded-t-[8px] border-[#454545] py-2 px-3 flex">
+                    <div className="text-white text-sm font-medium">
+                      Result
+                      </div>
                   </div>
-                  <CodeEditor language={lang} defaultCode={defaultCode} />
+                  
+                  <div className="bg-[#303030] border-t-2 border-[#454545] mt-auto flex flex-col items-end p-2 rounded-b-[8px]">
+                    <button className="bg-green-500 py-1.5 font-medium text-[13px] rounded-md leading-4 mr-8 w-28">
+                      Submit
+                    </button>
+                  </div>
+                  
                 </div>
               </Pane>
             </SplitPane>

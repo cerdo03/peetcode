@@ -38,7 +38,7 @@ function Login() {
 
   return (
     <>
-      <div className="bg-zinc-200 min-h-screen flex flex-col">
+      <div className="bg-zinc-200 h-full flex flex-col grow-[1]">
         <div className="w-full grow-[1.5]"/>
         <div className=" w-full justify-center items-start flex grow-[3]">
           <div className=" bg-white w-[400px] min-w-{96} rounded-xl p-6 block">
