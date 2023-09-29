@@ -4,33 +4,52 @@ import {BACKEND_URL} from "./constants.js"
 import axios from "axios";
 import Cookies from 'js-cookie';
 import { useNavigate } from "react-router-dom";
+import ReactLoading from "react-loading";
 
 function Login() {
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
+  const [submissionPending, setSubmissionPending] = useState(false);
+  const [isIncorrect, setIsIncorrect] = useState(false)
   const navigate = useNavigate();
   document.getElementsByTagName("body")[0].classList.add(["overscroll-none"])
   const handleLogin = async (e)=>{
+    setIsIncorrect(false);
     e.preventDefault();
+    setSubmissionPending(true);
     try{
       const data = {
         "username":username,
         "password":password
       }
       const response = await axios.post(BACKEND_URL+"/login", data)
-      console.log(response);
+      console.log(response,"resposme");
       if(response.status==200){
         if(response.data.success===true){
           Cookies.set("authToken",response.data.token,{ expires: 2 });
-          navigate('/questions')
+          setTimeout(() => {
+            setSubmissionPending(false);
+            navigate('/questions')
+          }, 2000);
+          
         }
         else{
           console.log("Some error has occured");
+          setTimeout(() => {
+            setSubmissionPending(false);
+          }, 2000);
         }
       }
+      
     }
     catch(error){
       console.log(error,"Some error has occured")
+      setTimeout(() => {
+        setSubmissionPending(false);
+        if(error.response.status==401){
+          setIsIncorrect(true);
+        }
+      }, 2000);
     }
 
   }
@@ -38,6 +57,13 @@ function Login() {
 
   return (
     <>
+    {submissionPending && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-60 transition-opacity ${submissionPending ? 'opacity-100' : 'opacity-0'}">
+          <div className="bg-opacity-60 p-4 rounded-md">
+            <ReactLoading type="balls" color="#FFFFFF" height={100} width={100} />
+          </div>
+        </div>
+      )}
       <div className="bg-zinc-200 h-full flex flex-col grow-[1]">
         <div className="w-full grow-[1.5]"/>
         <div className=" w-full justify-center items-start flex grow-[3]">
@@ -68,7 +94,11 @@ function Login() {
                 placeholder="Password"
                 onChange={(e)=>setPassword(e.target.value)}
               />
+              {isIncorrect && <div className="mt-4 text-center text-red-600 text-sm" id="">
+                The username and/or password you specified are not correct.
+              </div>}
             </div>
+            
 
             {/* SignIn Button */}
             <div className="mb-3">

@@ -23,9 +23,9 @@ function CodeEditor(props) {
       fontSize={16}
       width="100%"
       height="100%"
-      value={props.defaultCode}
+      value={props.code==""?props.defaultCode:props.code}
       onChange={(newValue) => {
-        console.log("Code:", newValue);
+        props.onChange(newValue)
       }}
       className="rounded-b-[8px]"
     />
@@ -103,10 +103,12 @@ function TextColor(difficulty) {
 function Questions() {
   const { id } = useParams();
   const [isLoading, setIsLoading] = useState(true);
+  const [submissionPending, setSubmissionPending] = useState(false);
   const token = Cookies.get("authToken");
   const [question, setQuestion] = useState(null);
   const [lang, setLang] = useState("javascript");
   const [defaultCode, setDefaultCode] = useState("");
+  const [code, setCode] = useState("")
 
   document.getElementsByTagName("body")[0].classList.add(["overscroll-none"])
   
@@ -119,6 +121,10 @@ function Questions() {
       setDefaultCode("public private void:");
     }
   }, [lang]);
+
+  useEffect(() => {
+    setCode(""); // Set user-edited code to default when language changes
+  }, [lang, defaultCode]);
 
   useEffect(() => {
     const apiUrl = BACKEND_URL + "/questions/" + id;
@@ -161,13 +167,49 @@ function Questions() {
       document.getElementById("horizontal_splitter").parentNode.style.display="inline"
     }
   })
+
+  const handleSubmitBtn = async (e)=>{
+    setSubmissionPending(true)
+    try{
+      const token = Cookies.get("authToken");
+      const headers = {
+        Authorization: `Bearer ${token}`, 
+      };
+      const data = {
+        'questionId':id,
+        'solution':code,
+      }
+      const response = await axios.post(BACKEND_URL+"/submitSolution", data,{headers})
+      console.log(response);
+      if(response.status==200){
+        if(response.data.success===true){
+          console.log("solution submitted")
+        }
+        else{
+          console.log("Some error has occured");
+        }
+      }
+      setTimeout(() => {
+        setSubmissionPending(false);
+      }, 3000);
+    }
+    catch(error){
+      console.log(error,"Some error has occured")
+      setTimeout(() => {
+        setSubmissionPending(false);
+      }, 3000);
+    }
+
+  }
+
+  
   
   
  
   if (isLoading) {
     return (
       <>
-        <div className="bg-[#1A1A1A] min-h-screen flex flex-col items-center justify-center mb-[100px]">
+        <div className="bg-[#1A1A1A] min-h-screen flex flex-col items-center justify-center mb-[100px] transition-opacity ${submissionPending ? 'opacity-100' : 'opacity-0'}">
           <ReactLoading type="balls" color="#FFFFFF" height={100} width={100} />
         </div>
       </>
@@ -175,6 +217,13 @@ function Questions() {
   }
   return (
     <>
+      {submissionPending && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1A1A1A] bg-opacity-60">
+          <div className="bg-opacity-60 p-4 rounded-md">
+            <ReactLoading type="balls" color="#FFFFFF" height={100} width={100} />
+          </div>
+        </div>
+      )}
       <div className="bg-[#1A1A1A] grow-[1] flex flex-col">
         <SplitPane
           split="vertical"
@@ -266,6 +315,7 @@ function Questions() {
                 </SashContent>
               )}
             >
+
               <Pane minSize={50} maxSize="90%" className="pb-2 bg-[#1A1A1A]">
                 <div
                   style={{ ...layoutCSSHor, background: "#282828" }}
@@ -274,9 +324,13 @@ function Questions() {
                   <div className="bg-[#303030] border-b-2 border-[#454545] flex rounded-t-[8px]">
                     <Dropdown setLang={setLang} lang={lang} />
                   </div>
-                  <CodeEditor language={lang} defaultCode={defaultCode} />
+                  <CodeEditor language={lang} code={code} defaultCode={defaultCode}
+                  onChange={(newCode) => {
+                    setCode(newCode); // Update the code state when the editor content changes
+                  }} />
                 </div>
               </Pane>
+
               <Pane minSize={50} maxSize="50%" className="pt-2 bg-[#1A1A1A]">
                 <div
                   style={{ ...layoutCSSHor, background: "#282828" }}
@@ -289,13 +343,14 @@ function Questions() {
                   </div>
                   
                   <div className="bg-[#303030] border-t-2 border-[#454545] mt-auto flex flex-col items-end p-2 rounded-b-[8px]">
-                    <button className="bg-green-500 py-1.5 font-medium text-[13px] rounded-md leading-4 mr-8 w-28">
+                    <button className="bg-green-500 py-1.5 font-medium text-[13px] rounded-md leading-4 mr-8 w-28" onClick={handleSubmitBtn}>
                       Submit
                     </button>
                   </div>
                   
                 </div>
               </Pane>
+
             </SplitPane>
           </Pane>
         </SplitPane>
