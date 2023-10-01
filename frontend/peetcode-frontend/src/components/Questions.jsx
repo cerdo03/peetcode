@@ -13,6 +13,7 @@ import "ace-builds/src-noconflict/mode-javascript";
 import "ace-builds/src-noconflict/mode-java";
 import "ace-builds/src-noconflict/mode-python";
 import "ace-builds/src-noconflict/theme-monokai";
+import Navbar from './Navbar'; 
 
 function CodeEditor(props) {
   return (
@@ -34,8 +35,8 @@ function CodeEditor(props) {
 
 function Dropdown({ lang, setLang }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedOption, setSelectedOption] = useState("Javascript");
-  const options = ["Javascript", "Python", "Java"];
+  const [selectedOption, setSelectedOption] = useState("Python");
+  const options = ["Python", "Java"];
 
   const toggleDropdown = () => {
     setIsOpen(!isOpen);
@@ -106,18 +107,19 @@ function Questions() {
   const [submissionPending, setSubmissionPending] = useState(false);
   const token = Cookies.get("authToken");
   const [question, setQuestion] = useState(null);
-  const [lang, setLang] = useState("javascript");
+  const [lang, setLang] = useState("python");
   const [defaultCode, setDefaultCode] = useState("");
   const [code, setCode] = useState("")
-
+  const [result, setResult] = useState(null);
   document.getElementsByTagName("body")[0].classList.add(["overscroll-none"])
   
   useEffect(() => {
     if (lang == "python") {
       setDefaultCode("def python():");
-    } else if (lang == "javascript") {
-      setDefaultCode("function js(){}");
-    } else if (lang == "java") {
+    }
+    // } else if (lang == "javascript") {
+    //   setDefaultCode("function js(){}");}
+    else if (lang == "java") {
       setDefaultCode("public private void:");
     }
   }, [lang]);
@@ -178,17 +180,22 @@ function Questions() {
       const data = {
         'questionId':id,
         'solution':code,
+        'lang':lang
       }
       const response = await axios.post(BACKEND_URL+"/submitSolution", data,{headers})
       console.log(response);
       if(response.status==200){
         if(response.data.success===true){
           console.log("solution submitted")
+          setResult(response.data.result);
         }
         else{
           console.log("Some error has occured");
+          setResult(response.data.result);
         }
       }
+      setResult(response.data.result);
+      setHorSizes(['70%','30%']);
       setTimeout(() => {
         setSubmissionPending(false);
       }, 3000);
@@ -224,6 +231,7 @@ function Questions() {
           </div>
         </div>
       )}
+      <Navbar/>
       <div className="bg-[#1A1A1A] grow-[1] flex flex-col">
         <SplitPane
           split="vertical"
@@ -341,6 +349,10 @@ function Questions() {
                       Result
                       </div>
                   </div>
+                  {result &&
+                  <div className="text-white text-sm font-medium text-left p-4" id="resultDiv">
+                    {result}
+                  </div>}
                   
                   <div className="bg-[#303030] border-t-2 border-[#454545] mt-auto flex flex-col items-end p-2 rounded-b-[8px]">
                     <button className="bg-green-500 py-1.5 font-medium text-[13px] rounded-md leading-4 mr-8 w-28" onClick={handleSubmitBtn}>

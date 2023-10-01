@@ -8,6 +8,7 @@ const jwt = require("jsonwebtoken");
 const bodyParser = require("body-parser");
 const cookieParser = require("cookie-parser");
 require("dotenv").config();
+const { exec } = require('child_process');
 const secretKey = process.env.SECRET_KEY;
 
 app.use(cookieParser());
@@ -61,6 +62,7 @@ const submissionSchema = new mongoose.Schema({
   questionId: String,
   solution: String,
   submitted_at: Date,
+  lang:String,
 });
 
 const submissionModel = mongoose.model("submissionModel", submissionSchema);
@@ -275,7 +277,7 @@ app.get("/questions/:id",authenticateToken, async function (req, res) {
 });
 
 app.post("/submitSolution", authenticateToken,async function(req, res) {
-  const {questionId,solution} = req.body;
+  const {questionId,solution,lang} = req.body;
   const userId = req.token.userId;
   const curTime = new Date();
   try{
@@ -283,10 +285,38 @@ app.post("/submitSolution", authenticateToken,async function(req, res) {
       submitted_by:userId,
       questionId:questionId,
       solution:solution,
-      submitted_at:curTime
+      submitted_at:curTime,
+      lang:lang
     });
     await newSolution.save();
-    res.status(200).json({success:true,error:"Solution submitted successfully"});
+    
+    if(lang=="python"){
+      const command = `docker run --rm --memory=1024m python-runner python -c "${solution}"`;
+
+      exec(command, (error, stdout, stderr) => {
+        if (error) {
+          console.error(error);
+          res.status(200).json({ success: false, error: 'Solution could not be submitted' , result:stderr});
+        } else {
+          console.log(stdout);
+          res.status(200).json({ success: true, result: stdout });
+        }
+      });
+    }
+    else if(lang=="java"){
+      const command = `docker run --rm --memory=1024m -e JAVA_CODE="${solution}" java-runner`;
+
+      exec(command, (error, stdout, stderr) => {
+        if (error) {
+          console.error(error);
+          res.status(200).json({ success: false, error: 'Solution could not be submitted', result: stderr });
+        } else {
+          console.log(stdout);
+          res.status(200).json({ success: true, result: stdout });
+        }
+      });
+    }
+    
   }
   catch(error){
     res.status(500).json({success:false,error:"Solution could not be submitted"});
