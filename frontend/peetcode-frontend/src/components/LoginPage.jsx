@@ -5,6 +5,7 @@ import axios from "axios";
 import Cookies from 'js-cookie';
 import { useNavigate } from "react-router-dom";
 import ReactLoading from "react-loading";
+import { Link } from 'react-router-dom';
 
 function Login() {
   const [username, setUsername] = useState("")
@@ -22,11 +23,11 @@ function Login() {
         "username":username,
         "password":password
       }
-      const response = await axios.post(BACKEND_URL+"/login", data)
+      const response = await axios.post(BACKEND_URL+"/login", data,{ withCredentials: true })
       console.log(response,"resposme");
       if(response.status==200){
         if(response.data.success===true){
-          Cookies.set("authToken",response.data.token,{ expires: 2 });
+          // Cookies.set("authToken",response.data.token,{ expires: 2 });
           setTimeout(() => {
             setSubmissionPending(false);
             navigate('/questions')
@@ -110,7 +111,7 @@ function Login() {
             {/* Forgot password and switch to signup page buttons*/}
             <div className="text-black text-sm flex justify-between mx-1 mb-10">
               <span className="hover:cursor-pointer">Forgot Password?</span>
-              <span className="hover:cursor-pointer">Sign Up</span>
+              <Link to="/SignUp" className="hover:cursor-pointer text-black hover:text-gray-600">Sign Up</Link>
             </div>
 
             {/* Captcha */}

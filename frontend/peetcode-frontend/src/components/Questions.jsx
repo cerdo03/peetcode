@@ -130,11 +130,8 @@ function Questions() {
 
   useEffect(() => {
     const apiUrl = BACKEND_URL + "/questions/" + id;
-    const headers = {
-      Authorization: `Bearer ${token}`,
-    };
     axios
-      .get(apiUrl, { headers })
+      .get(apiUrl,{ withCredentials: true })
       .then((response) => {
         console.log(response.data, "question response from api");
         setQuestion(response.data.question);
@@ -174,15 +171,12 @@ function Questions() {
     setSubmissionPending(true)
     try{
       const token = Cookies.get("authToken");
-      const headers = {
-        Authorization: `Bearer ${token}`, 
-      };
       const data = {
         'questionId':id,
         'solution':code,
         'lang':lang
       }
-      const response = await axios.post(BACKEND_URL+"/submitSolution", data,{headers})
+      const response = await axios.post(BACKEND_URL+"/submitSolution", data,{ withCredentials: true })
       console.log(response);
       if(response.status==200){
         if(response.data.success===true){

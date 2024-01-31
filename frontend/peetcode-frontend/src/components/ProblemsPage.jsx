@@ -21,10 +21,13 @@ function AllProblems() {
   useEffect(()=>{
     const apiUrl = BACKEND_URL+"/questions"
     const headers = {
-      Authorization: `Bearer ${token}`, 
+      // Authorization: `Bearer ${token}`, 
     };
     axios
-      .get(apiUrl, { headers })
+      .get(apiUrl, 
+        { withCredentials: true }
+        // { headers }
+        )
       .then((response) => {
         // Handle the API response and update the state
         if(response.status==200){
@@ -51,12 +54,9 @@ function AllProblems() {
   };
   if(isLoading){
     return (
-      <>
       <div className="bg-[#1A1A1A] min-h-screen flex flex-col items-center justify-center mb-[100px]">
-        <ReactLoading type="balls" color="#FFFFFF"
-                height={100} width={100} />
+        <ReactLoading type="balls" color="#FFFFFF" height={100} width={100} />
       </div>
-      </>
     );
   }
   return (
